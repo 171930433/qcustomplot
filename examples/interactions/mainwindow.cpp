@@ -8,8 +8,10 @@ MainWindow::MainWindow(QWidget *parent) :
   std::srand(QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0);
   ui->setupUi(this);
   
-  ui->customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectAxes |
+  ui->customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectAxes | QCP::iMultiSelect |
                                   QCP::iSelectLegend | QCP::iSelectPlottables);
+  ui->customPlot->setMultiSelectModifier(Qt::KeyboardModifier::ControlModifier);
+  ui->customPlot->setSelectionRectMode(QCP::SelectionRectMode::srmSelect);
   ui->customPlot->xAxis->setRange(-8, 8);
   ui->customPlot->yAxis->setRange(-5, 5);
   ui->customPlot->axisRect()->setupFullAxesBox();
@@ -50,10 +52,27 @@ MainWindow::MainWindow(QWidget *parent) :
   
   // connect slot that shows a message in the status bar when a graph is clicked:
   connect(ui->customPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,int,QMouseEvent*)), this, SLOT(graphClicked(QCPAbstractPlottable*,int)));
+
   
   // setup policy and connect slot for context menu popup:
   ui->customPlot->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(ui->customPlot, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenuRequest(QPoint)));
+}
+
+void MainWindow::OnSelectionChanged(QCPDataSelection const& select)
+{
+
+    for (int i=0; i<ui->customPlot->graphCount(); ++i)
+    {
+      QCPGraph *graph = ui->customPlot->graph(i);
+      if (graph->selection() == select && select.dataPointCount() > 0)
+      {
+          qDebug()<< graph->name() << " select size = " << select.dataPointCount();
+  //      graph->setSelection(QCPDataSelection(graph->data()->dataRange()));
+      }
+    }
+
+
 }
 
 MainWindow::~MainWindow()
@@ -147,7 +166,7 @@ void MainWindow::selectionChanged()
     if (item->selected() || graph->selected())
     {
       item->setSelected(true);
-      graph->setSelection(QCPDataSelection(graph->data()->dataRange()));
+//      graph->setSelection(QCPDataSelection(graph->data()->dataRange()));
     }
   }
 }
@@ -197,6 +216,8 @@ void MainWindow::addRandomGraph()
   }
   
   ui->customPlot->addGraph();
+  ui->customPlot->graph()->setSelectable(QCP::stDataRange);
+  connect(ui->customPlot->graph(), SIGNAL(selectionChanged(QCPDataSelection const&)), this, SLOT(OnSelectionChanged(QCPDataSelection const&)));
   ui->customPlot->graph()->setName(QString("New graph %1").arg(ui->customPlot->graphCount()-1));
   ui->customPlot->graph()->setData(x, y);
   ui->customPlot->graph()->setLineStyle((QCPGraph::LineStyle)(std::rand()%5+1));

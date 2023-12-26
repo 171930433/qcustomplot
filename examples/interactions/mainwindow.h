@@ -30,6 +30,7 @@ private slots:
   void contextMenuRequest(QPoint pos);
   void moveLegend();
   void graphClicked(QCPAbstractPlottable *plottable, int dataIndex);
+  void OnSelectionChanged(QCPDataSelection const& select);
   
 private:
   Ui::MainWindow *ui;
